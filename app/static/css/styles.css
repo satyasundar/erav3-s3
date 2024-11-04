@@ -8,10 +8,38 @@
 }
 
 #results {
-    max-height: 600px;
+    max-height: 400px;
     overflow: auto;
 }
 
 .hidden {
     display: none;
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+    #preview img, #results img {
+        max-height: 300px;
+        width: auto;
+    }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
 } 

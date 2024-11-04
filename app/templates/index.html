@@ -25,39 +25,45 @@
             </div>
         </div>
 
-        <!-- Preview Section -->
-        <div id="previewSection" class="bg-white rounded-lg shadow-lg p-6 mb-8 hidden">
-            <h2 class="text-xl font-semibold mb-4">File Preview</h2>
-            <div id="preview" class="flex justify-center"></div>
-        </div>
-
-        <!-- Processing Section -->
-        <div id="processingSection" class="bg-white rounded-lg shadow-lg p-6 mb-8 hidden">
-            <h2 class="text-xl font-semibold mb-4">Preprocessing Options</h2>
-            <div id="preprocessingOptions" class="grid grid-cols-2 gap-4 mb-4">
-                <!-- Options will be dynamically populated based on file type -->
+        <!-- Preview and Results Section (Side by Side) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <!-- Preview Section -->
+            <div id="previewSection" class="bg-white rounded-lg shadow-lg p-6 hidden">
+                <h2 class="text-xl font-semibold mb-4">File Preview</h2>
+                <div id="preview" class="flex justify-center"></div>
             </div>
-            <button id="processBtn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                Process
-            </button>
-        </div>
 
-        <!-- Augmentation Section -->
-        <div id="augmentationSection" class="bg-white rounded-lg shadow-lg p-6 mb-8 hidden">
-            <h2 class="text-xl font-semibold mb-4">Augmentation Options</h2>
-            <div id="augmentationOptions" class="grid grid-cols-2 gap-4 mb-4">
-                <!-- Options will be dynamically populated based on file type -->
+            <!-- Results Section -->
+            <div id="resultsSection" class="bg-white rounded-lg shadow-lg p-6 hidden">
+                <h2 class="text-xl font-semibold mb-4">Results</h2>
+                <div id="results" class="grid grid-cols-1 gap-4">
+                    <!-- Results will be displayed here -->
+                </div>
             </div>
-            <button id="augmentBtn" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-                Augment
-            </button>
         </div>
 
-        <!-- Results Section -->
-        <div id="resultsSection" class="bg-white rounded-lg shadow-lg p-6 hidden">
-            <h2 class="text-xl font-semibold mb-4">Results</h2>
-            <div id="results" class="grid grid-cols-2 gap-4">
-                <!-- Results will be displayed here -->
+        <!-- Processing and Augmentation Section (Side by Side) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Processing Section -->
+            <div id="processingSection" class="bg-white rounded-lg shadow-lg p-6 hidden">
+                <h2 class="text-xl font-semibold mb-4">Preprocessing Options</h2>
+                <div id="preprocessingOptions" class="grid grid-cols-1 gap-4 mb-4">
+                    <!-- Options will be dynamically populated based on file type -->
+                </div>
+                <button id="processBtn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full">
+                    Process
+                </button>
+            </div>
+
+            <!-- Augmentation Section -->
+            <div id="augmentationSection" class="bg-white rounded-lg shadow-lg p-6 hidden">
+                <h2 class="text-xl font-semibold mb-4">Augmentation Options</h2>
+                <div id="augmentationOptions" class="grid grid-cols-1 gap-4 mb-4">
+                    <!-- Options will be dynamically populated based on file type -->
+                </div>
+                <button id="augmentBtn" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full">
+                    Augment
+                </button>
             </div>
         </div>
     </div>
