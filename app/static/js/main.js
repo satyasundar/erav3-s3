@@ -45,6 +45,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 previewElement.innerHTML = `<pre>${data.preview}</pre>`;
             }
 
+            // Show empty results section
+            resultsSection.classList.remove('hidden');
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML = `
+                <div class="flex items-center justify-center h-full text-gray-500">
+                    <p>Process or augment the file to see results here</p>
+                </div>
+            `;
+
             // Show processing options
             showProcessingOptions(currentFileType);
             showAugmentationOptions(currentFileType);
@@ -56,6 +65,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function showProcessingOptions(fileType) {
+        // Show both preview and results sections
+        previewSection.classList.remove('hidden');
+        resultsSection.classList.remove('hidden');
+        
+        // Show processing section
         processingSection.classList.remove('hidden');
         const optionsContainer = document.getElementById('preprocessingOptions');
         optionsContainer.innerHTML = '';
@@ -69,9 +83,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 </label>
             `;
         });
+
+        // Initialize empty results container with placeholder
+        const resultsContainer = document.getElementById('results');
+        resultsContainer.innerHTML = `
+            <div class="flex items-center justify-center h-64 text-gray-500">
+                <p>Process or augment the file to see results here</p>
+            </div>
+        `;
     }
 
     function showAugmentationOptions(fileType) {
+        // Show augmentation section
         augmentationSection.classList.remove('hidden');
         const optionsContainer = document.getElementById('augmentationOptions');
         optionsContainer.innerHTML = '';
