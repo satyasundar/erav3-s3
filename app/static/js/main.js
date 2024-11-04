@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentFile = null;
     let currentFileType = null;
 
+    let previewRenderer, previewScene, previewCamera, previewControls;
+    let resultRenderers = new Map();
+
     fileInput.addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -42,7 +45,36 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (currentFileType === 'audio') {
                 previewElement.innerHTML = `<audio controls src="data:audio/wav;base64,${data.preview}"></audio>`;
             } else if (currentFileType === '3d') {
-                previewElement.innerHTML = `<pre>${data.preview}</pre>`;
+                try {
+                    const previewData = JSON.parse(data.preview);
+                    previewElement.innerHTML = `
+                        <div id="preview-container" class="w-full h-[400px]"></div>
+                        <details class="mt-2">
+                            <summary class="cursor-pointer text-sm text-gray-600">Show Details</summary>
+                            <pre class="text-xs mt-2">${JSON.stringify(previewData.stats, null, 2)}</pre>
+                        </details>
+                    `;
+                    
+                    // Initialize 3D viewer after the element is added to DOM
+                    setTimeout(() => {
+                        const viewerData = init3DViewer('preview-container', {
+                            vertices: previewData.vertices,
+                            faces: previewData.faces
+                        });
+                        if (viewerData) {
+                            previewRenderer = viewerData.renderer;
+                            previewScene = viewerData.scene;
+                            previewCamera = viewerData.camera;
+                            previewControls = viewerData.controls;
+                        }
+                    }, 0);
+                } catch (error) {
+                    console.error('Error parsing 3D preview data:', error);
+                    previewElement.innerHTML = `
+                        <div class="text-red-500">Error displaying 3D model</div>
+                        <pre class="text-xs mt-2">${data.preview}</pre>
+                    `;
+                }
             }
 
             // Show empty results section
@@ -254,24 +286,179 @@ document.addEventListener('DOMContentLoaded', function() {
                     <h3 class="font-semibold mb-2">${prefix} - ${technique}</h3>
                     <img src="data:image/png;base64,${result}" class="max-w-full h-auto" />
                 `;
+                resultsContainer.appendChild(resultElement);
             } else if (currentFileType === 'text') {
                 resultElement.innerHTML = `
                     <h3 class="font-semibold mb-2">${prefix} - ${technique}</h3>
                     <pre class="whitespace-pre-wrap">${result}</pre>
                 `;
+                resultsContainer.appendChild(resultElement);
             } else if (currentFileType === 'audio') {
                 resultElement.innerHTML = `
                     <h3 class="font-semibold mb-2">${prefix} - ${technique}</h3>
                     <audio controls src="data:audio/wav;base64,${result}"></audio>
                 `;
+                resultsContainer.appendChild(resultElement);
             } else if (currentFileType === '3d') {
-                resultElement.innerHTML = `
-                    <h3 class="font-semibold mb-2">${prefix} - ${technique}</h3>
-                    <pre>${result}</pre>
-                `;
-            }
+                try {
+                    const meshData = JSON.parse(result);
+                    resultElement.innerHTML = `
+                        <h3 class="font-semibold mb-2">${prefix} - ${technique}</h3>
+                        <div id="result-${technique}" class="w-full h-[400px]"></div>
+                        <details class="mt-2">
+                            <summary class="cursor-pointer text-sm text-gray-600">Show Details</summary>
+                            <pre class="text-xs mt-2">${JSON.stringify(meshData, null, 2)}</pre>
+                        </details>
+                    `;
+                    resultsContainer.appendChild(resultElement);
 
-            resultsContainer.appendChild(resultElement);
+                    // Initialize 3D viewer after the element is added to DOM
+                    setTimeout(() => {
+                        const viewerData = init3DViewer(`result-${technique}`, {
+                            vertices: meshData.vertices,
+                            faces: meshData.faces
+                        });
+                        if (viewerData) {
+                            resultRenderers.set(`result-${technique}`, viewerData);
+                        }
+                    }, 0);
+                } catch (error) {
+                    console.error('Error parsing 3D result:', error);
+                    resultElement.innerHTML = `
+                        <h3 class="font-semibold mb-2">${prefix} - ${technique}</h3>
+                        <div class="text-red-500">Error displaying 3D model</div>
+                        <pre class="text-xs mt-2">${result}</pre>
+                    `;
+                    resultsContainer.appendChild(resultElement);
+                }
+            }
         });
     }
+
+    // Add this function to initialize 3D viewer
+    function init3DViewer(containerId, data) {
+        try {
+            console.log('Initializing 3D viewer for', containerId);
+            console.log('Data:', data);
+            
+            const container = document.getElementById(containerId);
+            if (!container) {
+                console.error('Container not found:', containerId);
+                return null;
+            }
+
+            const width = container.clientWidth;
+            const height = 400;
+
+            // Create scene
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf0f0f0);
+
+            // Create camera
+            const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            camera.position.z = 2;
+
+            // Create renderer
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            container.innerHTML = '';
+            container.appendChild(renderer.domElement);
+
+            // Create controls
+            if (typeof THREE.OrbitControls === 'undefined') {
+                console.error('OrbitControls not loaded');
+                return null;
+            }
+            
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Create geometry from the data
+            const geometry = new THREE.BufferGeometry();
+            
+            // Convert vertices array to Float32Array
+            const vertices = new Float32Array(data.vertices.flat());
+            geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+
+            // Convert faces array to Uint16Array for indices
+            const indices = new Uint16Array(data.faces.flat());
+            geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+
+            // Calculate normals
+            geometry.computeVertexNormals();
+
+            // Create material with better appearance
+            const material = new THREE.MeshStandardMaterial({
+                color: 0x808080,  // Gray color instead of blue
+                roughness: 0.5,   // Add some roughness
+                metalness: 0.5,   // Add some metallic effect
+                side: THREE.DoubleSide
+            });
+
+            // Create mesh
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+
+            // Add better lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight1.position.set(1, 1, 1);
+            scene.add(directionalLight1);
+
+            const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
+            directionalLight2.position.set(-1, -1, -1);
+            scene.add(directionalLight2);
+
+            // Center and scale the mesh
+            geometry.computeBoundingSphere();
+            const center = geometry.boundingSphere.center;
+            const radius = geometry.boundingSphere.radius;
+            
+            mesh.position.sub(center);
+            const scale = 1 / radius;
+            mesh.scale.multiplyScalar(scale);
+
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            console.log('3D viewer initialized successfully');
+            return { renderer, scene, camera, controls };
+        } catch (error) {
+            console.error('Error initializing 3D viewer:', error);
+            return null;
+        }
+    }
+
+    // Add window resize handler
+    window.addEventListener('resize', function() {
+        if (previewRenderer) {
+            const container = document.getElementById('preview-container');
+            const width = container.clientWidth;
+            const height = 400;
+            
+            previewCamera.aspect = width / height;
+            previewCamera.updateProjectionMatrix();
+            previewRenderer.setSize(width, height);
+        }
+
+        resultRenderers.forEach((data, containerId) => {
+            const container = document.getElementById(containerId);
+            if (container) {
+                const width = container.clientWidth;
+                const height = 400;
+                
+                data.camera.aspect = width / height;
+                data.camera.updateProjectionMatrix();
+                data.renderer.setSize(width, height);
+            }
+        });
+    });
 }); 

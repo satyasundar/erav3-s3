@@ -2,13 +2,19 @@ import trimesh
 import numpy as np
 from typing import List
 import json
+import os
 
 def augment(file_path: str, techniques: List[str]) -> dict:
     """Apply augmentation techniques to the 3D mesh"""
     results = {}
     
     try:
-        mesh = trimesh.load(file_path)
+        # Force using the appropriate loader based on file extension
+        file_ext = os.path.splitext(file_path)[1].lower()
+        if file_ext == '.off':
+            mesh = trimesh.load_mesh(file_path, file_type='off')
+        else:
+            mesh = trimesh.load(file_path)
         
         for technique in techniques:
             if technique == "rotate":
@@ -42,4 +48,4 @@ def augment(file_path: str, techniques: List[str]) -> dict:
     except Exception as e:
         results["error"] = str(e)
     
-    return results 
+    return results

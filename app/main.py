@@ -61,7 +61,7 @@ async def upload_file(file: UploadFile = File(...)):
     elif file_ext in ['wav', 'mp3']:
         preview = audio_processor.get_preview(file_path)
         file_type = "audio"
-    elif file_ext in ['obj', 'stl']:
+    elif file_ext in ['obj', 'stl', 'off', 'ply']:
         preview = mesh_processor.get_preview(file_path)
         file_type = "3d"
     else:
@@ -96,7 +96,7 @@ async def preprocess_file(
 @app.post("/augment/{file_type}")
 async def augment_file(
     file_type: str,
-    request: PreprocessRequest  # Reusing the same model since structure is identical
+    request: PreprocessRequest
 ):
     file_path = os.path.join(UPLOAD_DIR, request.filename)
     
