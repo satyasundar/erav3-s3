@@ -11,6 +11,12 @@ document.addEventListener('DOMContentLoaded', function() {
     let previewRenderer, previewScene, previewCamera, previewControls;
     let resultRenderers = new Map();
 
+    let currentPreprocessedImage = null;
+
+    let originalPreview = null;
+
+    let currentPreprocessedResult = null;
+
     fileInput.addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -33,6 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             currentFile = data.filename;
             currentFileType = data.file_type;
+            originalPreview = data.preview;
 
             // Show preview
             previewSection.classList.remove('hidden');
@@ -256,7 +263,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify({
                     filename: currentFile,
-                    techniques: selectedOptions
+                    techniques: selectedOptions,
+                    preprocessed_result: currentPreprocessedResult
                 })
             });
 
@@ -279,40 +287,60 @@ document.addEventListener('DOMContentLoaded', function() {
 
         Object.entries(results).forEach(([technique, result]) => {
             const resultElement = document.createElement('div');
-            resultElement.className = 'border p-4 rounded';
+            resultElement.className = 'border p-4 rounded mb-4';
             
             if (currentFileType === 'image') {
                 resultElement.innerHTML = `
                     <h3 class="font-semibold mb-2">${prefix} - ${technique}</h3>
-                    <img src="data:image/png;base64,${result}" class="max-w-full h-auto" />
+                    <img src="data:image/png;base64,${result}" class="max-w-full h-auto mb-2" />
+                    <div class="mt-4">
+                        <button class="use-for-augmentation bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                                data-result="${result}" data-type="image">
+                            Use for Augmentation
+                        </button>
+                    </div>
                 `;
-                resultsContainer.appendChild(resultElement);
             } else if (currentFileType === 'text') {
                 resultElement.innerHTML = `
                     <h3 class="font-semibold mb-2">${prefix} - ${technique}</h3>
-                    <pre class="whitespace-pre-wrap">${result}</pre>
+                    <pre class="whitespace-pre-wrap mb-2">${result}</pre>
+                    <div class="mt-4">
+                        <button class="use-for-augmentation bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                                data-result="${encodeURIComponent(result)}" data-type="text">
+                            Use for Augmentation
+                        </button>
+                    </div>
                 `;
-                resultsContainer.appendChild(resultElement);
             } else if (currentFileType === 'audio') {
                 resultElement.innerHTML = `
                     <h3 class="font-semibold mb-2">${prefix} - ${technique}</h3>
-                    <audio controls src="data:audio/wav;base64,${result}"></audio>
+                    <audio controls src="data:audio/wav;base64,${result}" class="mb-2"></audio>
+                    <div class="mt-4">
+                        <button class="use-for-augmentation bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                                data-result="${result}" data-type="audio">
+                            Use for Augmentation
+                        </button>
+                    </div>
                 `;
-                resultsContainer.appendChild(resultElement);
             } else if (currentFileType === '3d') {
                 try {
                     const meshData = JSON.parse(result);
                     resultElement.innerHTML = `
                         <h3 class="font-semibold mb-2">${prefix} - ${technique}</h3>
                         <div id="result-${technique}" class="w-full h-[400px]"></div>
-                        <details class="mt-2">
+                        <details class="mt-2 mb-2">
                             <summary class="cursor-pointer text-sm text-gray-600">Show Details</summary>
                             <pre class="text-xs mt-2">${JSON.stringify(meshData, null, 2)}</pre>
                         </details>
+                        <div class="mt-4">
+                            <button class="use-for-augmentation bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                                    data-result="${encodeURIComponent(result)}" data-type="3d">
+                                Use for Augmentation
+                            </button>
+                        </div>
                     `;
                     resultsContainer.appendChild(resultElement);
 
-                    // Initialize 3D viewer after the element is added to DOM
                     setTimeout(() => {
                         const viewerData = init3DViewer(`result-${technique}`, {
                             vertices: meshData.vertices,
@@ -329,9 +357,120 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="text-red-500">Error displaying 3D model</div>
                         <pre class="text-xs mt-2">${result}</pre>
                     `;
-                    resultsContainer.appendChild(resultElement);
                 }
             }
+
+            // Add click handler for the "Use for Augmentation" button
+            resultElement.querySelector('.use-for-augmentation')?.addEventListener('click', function() {
+                const resultData = this.getAttribute('data-result');
+                const resultType = this.getAttribute('data-type');
+                
+                // Store the selected preprocessed result
+                currentPreprocessedResult = resultData;
+                
+                // Update preview to show selected result
+                const previewElement = document.getElementById('preview');
+                const previewSection = document.getElementById('previewSection');
+                
+                // Update the preview section heading
+                const previewHeading = previewSection.querySelector('h2');
+                previewHeading.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="text-blue-600">Using Preprocessed ${resultType.charAt(0).toUpperCase() + resultType.slice(1)}</span>
+                        <button class="ml-2 text-sm text-gray-500 hover:text-gray-700" onclick="resetPreview()">
+                            (Reset)
+                        </button>
+                    </div>
+                `;
+
+                // Update preview content based on file type
+                if (resultType === 'image') {
+                    previewElement.innerHTML = `
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-blue-700">Selected for augmentation</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-center">
+                            <img src="data:image/png;base64,${resultData}" class="max-w-full h-auto rounded shadow-lg" />
+                        </div>
+                    `;
+                } else if (resultType === 'text') {
+                    previewElement.innerHTML = `
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-blue-700">Selected for augmentation</p>
+                                </div>
+                            </div>
+                        </div>
+                        <pre class="whitespace-pre-wrap">${decodeURIComponent(resultData)}</pre>
+                    `;
+                } else if (resultType === 'audio') {
+                    previewElement.innerHTML = `
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-blue-700">Selected for augmentation</p>
+                                </div>
+                            </div>
+                        </div>
+                        <audio controls src="data:audio/wav;base64,${resultData}"></audio>
+                    `;
+                } else if (resultType === '3d') {
+                    const meshData = JSON.parse(decodeURIComponent(resultData));
+                    previewElement.innerHTML = `
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-blue-700">Selected for augmentation</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="preview-container" class="w-full h-[400px]"></div>
+                    `;
+
+                    setTimeout(() => {
+                        const viewerData = init3DViewer('preview-container', {
+                            vertices: meshData.vertices,
+                            faces: meshData.faces
+                        });
+                        if (viewerData) {
+                            previewRenderer = viewerData.renderer;
+                            previewScene = viewerData.scene;
+                            previewCamera = viewerData.camera;
+                            previewControls = viewerData.controls;
+                        }
+                    }, 0);
+                }
+
+                // Scroll to augmentation section
+                augmentationSection.scrollIntoView({ behavior: 'smooth' });
+            });
+
+            resultsContainer.appendChild(resultElement);
         });
     }
 
@@ -461,4 +600,47 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Add this function to reset the preview section
+    window.resetPreview = function() {
+        const previewSection = document.getElementById('previewSection');
+        const previewHeading = previewSection.querySelector('h2');
+        previewHeading.textContent = 'File Preview';
+        
+        const previewElement = document.getElementById('preview');
+        if (currentFileType === 'image') {
+            previewElement.innerHTML = `<img src="data:image/png;base64,${originalPreview}" class="max-w-full h-auto" />`;
+        } else if (currentFileType === 'text') {
+            previewElement.innerHTML = `<pre class="whitespace-pre-wrap">${originalPreview}</pre>`;
+        } else if (currentFileType === 'audio') {
+            previewElement.innerHTML = `<audio controls src="data:audio/wav;base64,${originalPreview}"></audio>`;
+        } else if (currentFileType === '3d') {
+            try {
+                const previewData = JSON.parse(originalPreview);
+                previewElement.innerHTML = `
+                    <div id="preview-container" class="w-full h-[400px]"></div>
+                    <details class="mt-2">
+                        <summary class="cursor-pointer text-sm text-gray-600">Show Details</summary>
+                        <pre class="text-xs mt-2">${JSON.stringify(previewData.stats, null, 2)}</pre>
+                    </details>
+                `;
+                
+                setTimeout(() => {
+                    const viewerData = init3DViewer('preview-container', {
+                        vertices: previewData.vertices,
+                        faces: previewData.faces
+                    });
+                    if (viewerData) {
+                        previewRenderer = viewerData.renderer;
+                        previewScene = viewerData.scene;
+                        previewCamera = viewerData.camera;
+                        previewControls = viewerData.controls;
+                    }
+                }, 0);
+            } catch (error) {
+                console.error('Error resetting 3D preview:', error);
+            }
+        }
+        currentPreprocessedResult = null;
+    };
 }); 

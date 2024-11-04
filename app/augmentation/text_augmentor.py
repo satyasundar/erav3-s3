@@ -2,6 +2,7 @@ import nltk
 from nltk.corpus import wordnet
 import random
 from typing import List
+import html
 
 nltk.download('wordnet')
 
@@ -24,7 +25,7 @@ def augment(file_path: str, techniques: List[str]) -> dict:
                         syns = wordnet.synsets(augmented_words[i])
                         if syns:
                             augmented_words[i] = random.choice(syns).lemmas()[0].name()
-                results[technique] = ' '.join(augmented_words)
+                results[technique] = html.escape(' '.join(augmented_words))
             
             elif technique == "insertion":
                 # Insert random words from the text
@@ -32,7 +33,7 @@ def augment(file_path: str, techniques: List[str]) -> dict:
                 for i in range(len(augmented_words)):
                     if random.random() < 0.2:  # 20% chance to insert word
                         augmented_words.insert(i, random.choice(words))
-                results[technique] = ' '.join(augmented_words)
+                results[technique] = html.escape(' '.join(augmented_words))
             
     except Exception as e:
         results["error"] = str(e)
