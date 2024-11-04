@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Processing & Augmentation Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8 text-center">Data Processing & Augmentation Tool</h1>
+        
+        <!-- File Upload Section -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Upload File</h2>
+            <div class="flex items-center justify-center w-full">
+                <label class="w-full flex flex-col items-center px-4 py-6 bg-white rounded-lg shadow-lg tracking-wide border border-blue-500 cursor-pointer hover:bg-blue-500 hover:text-white">
+                    <svg class="w-8 h-8" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4-4-4 4h3v3h2v-3z" />
+                    </svg>
+                    <span class="mt-2 text-base">Select a file</span>
+                    <input type='file' class="hidden" id="fileInput" />
+                </label>
+            </div>
+        </div>
+
+        <!-- Preview Section -->
+        <div id="previewSection" class="bg-white rounded-lg shadow-lg p-6 mb-8 hidden">
+            <h2 class="text-xl font-semibold mb-4">File Preview</h2>
+            <div id="preview" class="flex justify-center"></div>
+        </div>
+
+        <!-- Processing Section -->
+        <div id="processingSection" class="bg-white rounded-lg shadow-lg p-6 mb-8 hidden">
+            <h2 class="text-xl font-semibold mb-4">Preprocessing Options</h2>
+            <div id="preprocessingOptions" class="grid grid-cols-2 gap-4 mb-4">
+                <!-- Options will be dynamically populated based on file type -->
+            </div>
+            <button id="processBtn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Process
+            </button>
+        </div>
+
+        <!-- Augmentation Section -->
+        <div id="augmentationSection" class="bg-white rounded-lg shadow-lg p-6 mb-8 hidden">
+            <h2 class="text-xl font-semibold mb-4">Augmentation Options</h2>
+            <div id="augmentationOptions" class="grid grid-cols-2 gap-4 mb-4">
+                <!-- Options will be dynamically populated based on file type -->
+            </div>
+            <button id="augmentBtn" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                Augment
+            </button>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="bg-white rounded-lg shadow-lg p-6 hidden">
+            <h2 class="text-xl font-semibold mb-4">Results</h2>
+            <div id="results" class="grid grid-cols-2 gap-4">
+                <!-- Results will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
+</body>
+</html> 
